@@ -1,5 +1,44 @@
 # USV Mission Planner — Full Project Plan
 
+## Downloading OSM Tiles
+
+Tiles follow the slippy-map URL scheme: `https://tile.openstreetmap.org/{zoom}/{x}/{y}.png`
+
+The tile ranges for Thermaikos Bay are:
+
+| Zoom | x range | y range | Tiles |
+|------|---------|---------|-------|
+| 13 | 4616 – 4620 | 3080 – 3085 | ~30 |
+| 14 | 9232 – 9241 | 6160 – 6171 | ~120 |
+| 15 | 18465 – 18483 | 12321 – 12344 | ~450 |
+
+Run this from the project root (requires `wget`):
+
+```bash
+download_range() {
+    local z=$1 x0=$2 x1=$3 y0=$4 y1=$5
+    for x in $(seq $x0 $x1); do
+        for y in $(seq $y0 $y1); do
+            mkdir -p assets/tiles/thermaikos/$z/$x
+            local f="assets/tiles/thermaikos/$z/$x/$y.png"
+            [ -f "$f" ] && continue
+            wget -q --user-agent="USV_Planner/1.0" \
+                -O "$f" \
+                "https://tile.openstreetmap.org/$z/$x/$y.png"
+            sleep 0.1
+        done
+    done
+}
+
+download_range 13  4616  4620  3080  3085
+download_range 14  9232  9241  6160  6171
+download_range 15 18465 18483 12321 12344
+```
+
+Already-downloaded tiles are skipped on re-run. Total size is ~11 MB for all three zoom levels.
+
+---
+
 ## Coding Style
 - **snake_case** for all identifiers (variables, functions, structs, enums, filenames)
 - **Allman braces** — opening `{` always on its own line
