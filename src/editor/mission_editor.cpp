@@ -108,12 +108,23 @@ void mission_editor::handle_input()
         return;   // block map interaction while typing
     }
 
+    Vector2 mouse = GetMousePosition();
+    if (mouse.y <= config::toolbar_h) return;
+
+    // Right-click on a waypoint → delete it
+    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT))
+    {
+        std::string hit = wp_under_mouse();
+        if (!hit.empty())
+        {
+            if (sel_id_ == hit) sel_id_.clear();
+            mission_.waypoints.erase(hit);
+        }
+        return;
+    }
+
     // Left click — only below the toolbar
     if (!IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
-        return;
-
-    Vector2 mouse = GetMousePosition();
-    if (mouse.y <= config::toolbar_h)
         return;
 
     std::string hit = wp_under_mouse();

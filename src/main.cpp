@@ -106,21 +106,36 @@ int main()
                 }
             }
 
+            if (toolbar_button(322.f, 4.f,  90.f, 32.f, "Load JSON", false))
+            {
+                const std::string path = "mission.json";
+                if (mission_io::load(current_mission, path))
+                {
+                    editor.set_tool(editor_tool::none);
+                    status_msg   = "Loaded: " + path;
+                    status_timer = 3.0;
+                }
+                else
+                {
+                    status_msg   = "Load failed!";
+                    status_timer = 3.0;
+                }
+            }
+
             // Decay status message
             if (status_timer > 0.0)
             {
                 status_timer -= GetFrameTime();
                 Color col = status_msg.rfind("fail") != std::string::npos
                           ? Color{255, 80, 80, 255} : Color{80, 220, 120, 255};
-                DrawText(status_msg.c_str(), 324, 13, 13, col);
+                DrawText(status_msg.c_str(), 420, 13, 13, col);
             }
-            else
+            else if (wp_active || gf_active)
             {
                 const char* hint =
-                    wp_active ? "Click map to place waypoint  |  Click waypoint to rename" :
-                    gf_active ? "Left-click to add vertex  |  Right-click to close  |  Esc to cancel" :
-                                "Click a waypoint to rename it";
-                DrawText(hint, 324, 13, 13, Color{140, 145, 170, 255});
+                    wp_active ? "Click map to place  |  Click waypoint to rename" :
+                                "Left-click to add vertex  |  Right-click to close  |  Esc to cancel";
+                DrawText(hint, 420, 13, 13, Color{140, 145, 170, 255});
             }
 
             EndDrawing();
