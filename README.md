@@ -9,8 +9,8 @@
 
 ## Environment
 - C++17, CMake ≥ 3.20
-- Raylib 4.5 installed at `/home/forgo/libs/raylib` (cmake config: `cmake/raylib-config.cmake`)
-- BehaviorTree.CPP 4.9 installed at `/home/forgo/libs/BehaviorTree.CPP` (cmake config: `build/`)
+- Raylib 4.5 installed at `/home/<username>/libs/raylib` (cmake config: `cmake/raylib-config.cmake`)
+- BehaviorTree.CPP 4.9 installed at `/home/<username>/libs/BehaviorTree.CPP` (cmake config: `build/`)
 - nlohmann/json via FetchContent (header-only)
 - Pre-downloaded OSM tiles for Thermaikos Bay at `assets/tiles/thermaikos/<zoom>/<x>/<y>.png`
 
