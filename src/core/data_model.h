@@ -59,11 +59,20 @@ struct mission_item
     cmd_params  params;
 };
 
+// ── Geofence ──────────────────────────────────────────────────────────────────
+
+struct geofence
+{
+    std::vector<std::pair<double,double>> verts;   // (lat, lon) ordered, closed polygon
+    bool enabled = true;
+};
+
 // ── Mission ───────────────────────────────────────────────────────────────────
 
 struct mission
 {
     std::unordered_map<std::string, waypoint> waypoints;
+    geofence                                   fence;
     std::vector<mission_item>                  commands;
     std::string                                name = "Untitled";
 };

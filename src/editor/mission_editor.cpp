@@ -17,6 +17,8 @@ mission_editor::mission_editor(mission& m, map_view& view)
 
 void mission_editor::set_tool(editor_tool t)
 {
+    if (tool_ == editor_tool::draw_geofence && t != editor_tool::draw_geofence)
+        in_progress_.clear();
     tool_ = t;
 }
 
@@ -145,8 +147,43 @@ void mission_editor::handle_input()
     }
 }
 
+void mission_editor::handle_geofence_tool()
+{
+    if (IsKeyPressed(KEY_ESCAPE))
+    {
+        in_progress_.clear();
+        return;
+    }
+
+    Vector2 mouse = GetMousePosition();
+    bool in_map = mouse.y > config::toolbar_h
+               && mouse.x < GetScreenWidth() - config::panel_w;
+    if (!in_map) return;
+
+    if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+    {
+        double lat, lon;
+        view_.screen_to_latlon(mouse.x, mouse.y, lat, lon);
+        in_progress_.push_back({lat, lon});
+        return;
+    }
+
+    // Right-click with ≥ 3 vertices → commit
+    if (IsMouseButtonPressed(MOUSE_BUTTON_RIGHT) && in_progress_.size() >= 3)
+    {
+        mission_.fence.verts   = in_progress_;
+        mission_.fence.enabled = true;
+        in_progress_.clear();
+    }
+}
+
 void mission_editor::update()
 {
+    if (tool_ == editor_tool::draw_geofence)
+    {
+        handle_geofence_tool();
+        return;
+    }
     handle_input();
 }
 
@@ -218,8 +255,62 @@ void mission_editor::draw_rename_panel()
     }
 }
 
+void mission_editor::draw_geofence() const
+{
+    // ── Committed geofence ────────────────────────────────────────────────────
+    if (mission_.fence.enabled && mission_.fence.verts.size() >= 3)
+    {
+        std::vector<Vector2> pts;
+        pts.reserve(mission_.fence.verts.size());
+        for (auto& [lat, lon] : mission_.fence.verts)
+            pts.push_back(view_.latlon_to_screen(lat, lon));
+
+        // Semi-transparent fill (fan triangulation)
+        Color fill = {50, 200, 80, 28};
+        for (std::size_t i = 1; i + 1 < pts.size(); ++i)
+            DrawTriangle(pts[0], pts[i], pts[i + 1], fill);
+
+        // Outline + vertex dots
+        Color line = {60, 220, 90, 210};
+        for (std::size_t i = 0; i < pts.size(); ++i)
+        {
+            Vector2 a = pts[i];
+            Vector2 b = pts[(i + 1) % pts.size()];
+            DrawLineEx(a, b, 2.f, line);
+            DrawCircleV(a, 4.f, line);
+        }
+    }
+
+    // ── In-progress polygon ───────────────────────────────────────────────────
+    if (in_progress_.empty()) return;
+
+    std::vector<Vector2> pts;
+    pts.reserve(in_progress_.size());
+    for (auto& [lat, lon] : in_progress_)
+        pts.push_back(view_.latlon_to_screen(lat, lon));
+
+    Color col = {120, 240, 120, 200};
+
+    for (std::size_t i = 0; i + 1 < pts.size(); ++i)
+        DrawLineEx(pts[i], pts[i + 1], 2.f, col);
+
+    for (auto& p : pts)
+        DrawCircleV(p, 5.f, col);
+
+    // Highlight first vertex when closeable (shows user where to right-click)
+    if (pts.size() >= 3)
+        DrawCircleLines(static_cast<int>(pts[0].x), static_cast<int>(pts[0].y),
+                        9, Color{200, 255, 200, 220});
+
+    // Preview line from last vertex to mouse cursor
+    Vector2 mouse = GetMousePosition();
+    if (mouse.y > config::toolbar_h && mouse.x < GetScreenWidth() - config::panel_w)
+        DrawLineEx(pts.back(), mouse, 1.5f, Color{120, 240, 120, 90});
+}
+
 void mission_editor::draw()
 {
+    draw_geofence();
     draw_waypoints();
     draw_rename_panel();
 }

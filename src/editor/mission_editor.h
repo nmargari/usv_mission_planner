@@ -1,10 +1,12 @@
 #pragma once
 
 #include <string>
+#include <vector>
+#include <utility>
 #include "core/data_model.h"
 #include "map/map_view.h"
 
-enum class editor_tool { none, place_waypoint };
+enum class editor_tool { none, place_waypoint, draw_geofence };
 
 class mission_editor
 {
@@ -27,13 +29,18 @@ private:
     void confirm_rename();
 
     void handle_input();
+    void handle_geofence_tool();
     void draw_waypoints() const;
+    void draw_geofence() const;
     void draw_rename_panel();
 
     mission&    mission_;
     map_view&   view_;
     editor_tool tool_    = editor_tool::none;
-    std::string sel_id_;       // currently selected waypoint
+    std::string sel_id_;
     bool        renaming_ = false;
     char        rename_buf_[64] = {};
+
+    // Geofence vertices being drawn (not yet committed)
+    std::vector<std::pair<double,double>> in_progress_;
 };

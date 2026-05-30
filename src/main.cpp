@@ -31,6 +31,7 @@ int main()
 {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_MSAA_4X_HINT);
     InitWindow(config::window_w, config::window_h, "USV Mission Planner");
+    SetExitKey(KEY_NULL);   // Escape is handled by the app, not by Raylib
     SetTargetFPS(60);
 
     // Scope block: all GPU-owning objects must be destroyed BEFORE CloseWindow(),
@@ -78,13 +79,19 @@ int main()
             DrawLine(0, config::toolbar_h, sw, config::toolbar_h, Color{60, 60, 85, 255});
 
             bool wp_active = editor.current_tool() == editor_tool::place_waypoint;
-            if (toolbar_button(8.f, 4.f, 110.f, 32.f, "Add Waypoint", wp_active))
+            bool gf_active = editor.current_tool() == editor_tool::draw_geofence;
+
+            if (toolbar_button(  8.f, 4.f, 110.f, 32.f, "Add Waypoint", wp_active))
                 editor.set_tool(wp_active ? editor_tool::none : editor_tool::place_waypoint);
 
-            const char* hint = wp_active
-                ? "Click map to place  |  Click waypoint to rename"
-                : "Click a waypoint to rename it";
-            DrawText(hint, 128, 13, 13, Color{140, 145, 170, 255});
+            if (toolbar_button(124.f, 4.f,  96.f, 32.f, "Geofence", gf_active))
+                editor.set_tool(gf_active ? editor_tool::none : editor_tool::draw_geofence);
+
+            const char* hint =
+                wp_active ? "Click map to place waypoint  |  Click waypoint to rename" :
+                gf_active ? "Left-click to add vertex  |  Right-click to close polygon  |  Esc to cancel" :
+                            "Click a waypoint to rename it";
+            DrawText(hint, 228, 13, 13, Color{140, 145, 170, 255});
 
             EndDrawing();
         }
