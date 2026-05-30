@@ -21,6 +21,7 @@ set(SOURCES
     src/map/tile_index.cpp
     src/map/tile_cache.cpp
     src/map/map_view.cpp
+    src/editor/mission_editor.cpp
 )
 
 add_executable(usv_mission_planner ${SOURCES})

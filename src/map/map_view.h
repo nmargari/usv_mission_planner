@@ -28,6 +28,9 @@ public:
     double center_lon() const { return center_lon_; }
     int    zoom_level() const { return zoom_; }
 
+    // Pixels from the top of the window to reserve for the toolbar
+    void set_top_offset(int h) { top_offset_ = h; }
+
 private:
     void do_pan(float dx, float dy);
     void do_zoom(float wheel, Vector2 mouse);
@@ -39,6 +42,7 @@ private:
     int        screen_h_;
     tile_cache& cache_;
 
+    int   top_offset_  = 0;
     bool  panning_     = false;
     float pan_prev_x_  = 0.f;
     float pan_prev_y_  = 0.f;

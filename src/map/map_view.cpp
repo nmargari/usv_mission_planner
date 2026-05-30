@@ -81,15 +81,18 @@ void map_view::update()
     screen_w_ = GetScreenWidth();
     screen_h_ = GetScreenHeight();
 
-    // Zoom on scroll wheel
-    float wheel = GetMouseWheelMove();
-    if (wheel != 0.f)
-        do_zoom(wheel, GetMousePosition());
+    Vector2 mouse   = GetMousePosition();
+    bool    in_map  = mouse.y > static_cast<float>(top_offset_);
 
-    // Pan on middle-mouse or right-mouse drag
-    Vector2 mouse  = GetMousePosition();
-    bool    pan_btn = IsMouseButtonDown(MOUSE_BUTTON_MIDDLE)
-                   || IsMouseButtonDown(MOUSE_BUTTON_RIGHT);
+    // Zoom on scroll wheel (only in map area)
+    float wheel = GetMouseWheelMove();
+    if (wheel != 0.f && in_map)
+        do_zoom(wheel, mouse);
+
+    // Pan on middle-mouse or right-mouse drag (only in map area)
+    bool    pan_btn = in_map
+                   && (IsMouseButtonDown(MOUSE_BUTTON_MIDDLE)
+                    || IsMouseButtonDown(MOUSE_BUTTON_RIGHT));
 
     if (pan_btn)
     {

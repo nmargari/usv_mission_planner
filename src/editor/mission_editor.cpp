@@ -1,0 +1,212 @@
+#include "mission_editor.h"
+#include "core/config.h"
+#include <raylib.h>
+#include <cstring>
+#include <cstdio>
+#include <cmath>
+
+// ── Construction ──────────────────────────────────────────────────────────────
+
+mission_editor::mission_editor(mission& m, map_view& view)
+    : mission_(m)
+    , view_(view)
+{}
+
+// ── Tool ─────────────────────────────────────────────────────────────────────
+
+void mission_editor::set_tool(editor_tool t)
+{
+    tool_ = t;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+std::string mission_editor::wp_under_mouse() const
+{
+    Vector2 mouse = GetMousePosition();
+    for (auto& [id, wp] : mission_.waypoints)
+    {
+        Vector2 pos = view_.latlon_to_screen(wp.lat, wp.lon);
+        float dx = mouse.x - pos.x;
+        float dy = mouse.y - pos.y;
+        if (std::sqrt(dx * dx + dy * dy) <= 12.f)
+            return id;
+    }
+    return {};
+}
+
+std::string mission_editor::next_wp_id() const
+{
+    int n = static_cast<int>(mission_.waypoints.size()) + 1;
+    char buf[32];
+    while (true)
+    {
+        std::snprintf(buf, sizeof(buf), "WP_%02d", n);
+        if (!mission_.waypoints.count(buf))
+            return buf;
+        ++n;
+    }
+}
+
+void mission_editor::begin_rename(const std::string& wp_id)
+{
+    sel_id_   = wp_id;
+    renaming_ = true;
+    std::strncpy(rename_buf_, wp_id.c_str(), sizeof(rename_buf_) - 1);
+    rename_buf_[sizeof(rename_buf_) - 1] = '\0';
+}
+
+void mission_editor::confirm_rename()
+{
+    renaming_ = false;
+
+    std::string new_id = rename_buf_;
+    if (new_id.empty() || new_id == sel_id_)
+        return;
+
+    // Reject duplicate names
+    if (mission_.waypoints.count(new_id))
+        return;
+
+    auto node = mission_.waypoints.extract(sel_id_);
+    node.key()         = new_id;
+    node.mapped().id   = new_id;
+    mission_.waypoints.insert(std::move(node));
+    sel_id_ = new_id;
+}
+
+// ── Update ────────────────────────────────────────────────────────────────────
+
+void mission_editor::handle_input()
+{
+    // Handle rename text input when the rename box is open
+    if (renaming_)
+    {
+        int ch;
+        while ((ch = GetCharPressed()) != 0)
+        {
+            int len = static_cast<int>(std::strlen(rename_buf_));
+            if (len < 63 && ch >= 32)
+            {
+                rename_buf_[len]     = static_cast<char>(ch);
+                rename_buf_[len + 1] = '\0';
+            }
+        }
+        if (IsKeyPressed(KEY_BACKSPACE))
+        {
+            int len = static_cast<int>(std::strlen(rename_buf_));
+            if (len > 0)
+                rename_buf_[len - 1] = '\0';
+        }
+        if (IsKeyPressed(KEY_ENTER))
+            confirm_rename();
+        if (IsKeyPressed(KEY_ESCAPE))
+            renaming_ = false;
+        return;   // block map interaction while typing
+    }
+
+    // Left click — only below the toolbar
+    if (!IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
+        return;
+
+    Vector2 mouse = GetMousePosition();
+    if (mouse.y <= config::toolbar_h)
+        return;
+
+    std::string hit = wp_under_mouse();
+
+    if (!hit.empty())
+    {
+        // Click on existing waypoint → rename it
+        begin_rename(hit);
+        return;
+    }
+
+    if (tool_ == editor_tool::place_waypoint)
+    {
+        // Click on empty map → place new waypoint and immediately rename
+        double lat, lon;
+        view_.screen_to_latlon(mouse.x, mouse.y, lat, lon);
+
+        waypoint wp;
+        wp.id  = next_wp_id();
+        wp.lat = lat;
+        wp.lon = lon;
+
+        mission_.waypoints[wp.id] = wp;
+
+        begin_rename(wp.id);
+    }
+    else
+    {
+        // Click on empty map with no tool → deselect
+        sel_id_.clear();
+    }
+}
+
+void mission_editor::update()
+{
+    handle_input();
+}
+
+// ── Draw ──────────────────────────────────────────────────────────────────────
+
+void mission_editor::draw_waypoints() const
+{
+    for (auto& [id, wp] : mission_.waypoints)
+    {
+        Vector2 pos = view_.latlon_to_screen(wp.lat, wp.lon);
+        wp.px = pos.x;
+        wp.py = pos.y;
+
+        bool selected = (id == sel_id_);
+        Color fill    = selected ? Color{255, 165,   0, 255}
+                                 : Color{255,  60,  60, 255};
+
+        DrawCircleV(pos, 8.f, fill);
+        DrawCircleLines(static_cast<int>(pos.x), static_cast<int>(pos.y), 8, WHITE);
+
+        // Name label to the right of the marker
+        DrawText(id.c_str(),
+                 static_cast<int>(pos.x) + 12,
+                 static_cast<int>(pos.y) - 8,
+                 14, WHITE);
+    }
+}
+
+void mission_editor::draw_rename_panel()
+{
+    if (!renaming_ || sel_id_.empty())
+        return;
+
+    int pw = 260;
+    int ph = 68;
+    int px = GetScreenWidth()  - pw - 8;
+    int py = config::toolbar_h + 8;
+
+    DrawRectangle(px, py, pw, ph, Color{18, 18, 32, 235});
+    DrawRectangleLinesEx({(float)px, (float)py, (float)pw, (float)ph},
+                         1.5f, Color{100, 100, 160, 255});
+
+    DrawText("Rename waypoint (Enter to confirm)",
+             px + 8, py + 8, 12, LIGHTGRAY);
+
+    // Text box
+    DrawRectangle(px + 8, py + 28, pw - 16, 28, Color{35, 35, 55, 255});
+    DrawRectangleLinesEx({(float)(px + 8), (float)(py + 28), (float)(pw - 16), 28.f},
+                         1.f, Color{80, 160, 255, 255});
+    DrawText(rename_buf_, px + 14, py + 34, 15, WHITE);
+
+    // Blinking cursor
+    if (static_cast<int>(GetTime() * 2) % 2 == 0)
+    {
+        int cx = px + 14 + MeasureText(rename_buf_, 15);
+        DrawLine(cx, py + 31, cx, py + 53, WHITE);
+    }
+}
+
+void mission_editor::draw()
+{
+    draw_waypoints();
+    draw_rename_panel();
+}
