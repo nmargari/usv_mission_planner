@@ -4,6 +4,7 @@
 #include <cstring>
 #include <cstdio>
 #include <cmath>
+#include <algorithm>
 
 // ── Construction ──────────────────────────────────────────────────────────────
 
@@ -179,10 +180,22 @@ void mission_editor::draw_rename_panel()
     if (!renaming_ || sel_id_.empty())
         return;
 
-    int pw = 260;
-    int ph = 68;
-    int px = GetScreenWidth()  - pw - 8;
-    int py = config::toolbar_h + 8;
+    auto it = mission_.waypoints.find(sel_id_);
+    if (it == mission_.waypoints.end()) return;
+
+    const waypoint& wp = it->second;
+    Vector2 pos = view_.latlon_to_screen(wp.lat, wp.lon);
+
+    const int pw = 240;
+    const int ph = 68;
+    // Right edge of the map area — never overlap the command panel
+    const int map_right = GetScreenWidth() - config::panel_w;
+
+    // Place the box to the right of the waypoint marker, then clamp into map area
+    int px = static_cast<int>(pos.x) + 18;
+    int py = static_cast<int>(pos.y) - ph / 2;
+    px = std::clamp(px, 8, map_right - pw - 8);
+    py = std::clamp(py, config::toolbar_h + 8, GetScreenHeight() - ph - 8);
 
     DrawRectangle(px, py, pw, ph, Color{18, 18, 32, 235});
     DrawRectangleLinesEx({(float)px, (float)py, (float)pw, (float)ph},
