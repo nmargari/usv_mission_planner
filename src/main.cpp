@@ -6,6 +6,7 @@
 #include "editor/mission_editor.h"
 #include "editor/command_panel.h"
 #include "serialization/mission_io.h"
+#include "simulator/sim_engine.h"
 #include <string>
 
 static bool toolbar_button(float x, float y, float w, float h,
@@ -40,8 +41,9 @@ int main()
     // otherwise UnloadTexture() is called on a dead OpenGL context → segfault.
     {
         mission     current_mission;
-        std::string status_msg;          // shown in toolbar after export
-        double      status_timer = 0.0;  // seconds remaining to show it
+        std::string status_msg;
+        double      status_timer = 0.0;
+        sim_engine  engine;
         tile_cache  cache("assets/tiles/thermaikos");
 
         map_view view(GetScreenWidth(), GetScreenHeight(),
@@ -122,20 +124,59 @@ int main()
                 }
             }
 
+            if (toolbar_button(418.f, 4.f,  88.f, 32.f, "Execute", false))
+            {
+                engine.run(current_mission);
+            }
+
             // Decay status message
             if (status_timer > 0.0)
             {
                 status_timer -= GetFrameTime();
                 Color col = status_msg.rfind("fail") != std::string::npos
                           ? Color{255, 80, 80, 255} : Color{80, 220, 120, 255};
-                DrawText(status_msg.c_str(), 420, 13, 13, col);
+                DrawText(status_msg.c_str(), 514, 13, 13, col);
             }
             else if (wp_active || gf_active)
             {
                 const char* hint =
                     wp_active ? "Click map to place  |  Click waypoint to rename" :
                                 "Left-click to add vertex  |  Right-click to close  |  Esc to cancel";
-                DrawText(hint, 420, 13, 13, Color{140, 145, 170, 255});
+                DrawText(hint, 514, 13, 13, Color{140, 145, 170, 255});
+            }
+
+            // ── Execution log panel ───────────────────────────────────────
+            if (engine.has_result())
+            {
+                const auto& lines  = engine.log();
+                const int   line_h = 18;
+                const int   pad    = 10;
+                const int   pw     = 440;
+                int         ph     = pad + 20 + static_cast<int>(lines.size()) * line_h + pad + 22 + pad;
+                int         px     = 8;
+                int         py     = sh - 34 - ph;   // sit above the map HUD
+
+                DrawRectangle(px, py, pw, ph, Color{10, 12, 24, 215});
+                DrawRectangleLinesEx({(float)px, (float)py, (float)pw, (float)ph},
+                                     1.f, Color{70, 75, 120, 220});
+
+                DrawText("── Execution Log", px + pad, py + pad, 14,
+                         Color{150, 158, 210, 255});
+
+                int ty = py + pad + 20;
+                for (auto& line : lines)
+                {
+                    Color col = (line.rfind("ERROR", 0) == 0)
+                              ? Color{255, 90, 90, 255} : WHITE;
+                    DrawText(line.c_str(), px + pad, ty, 14, col);
+                    ty += line_h;
+                }
+
+                Color footer_col = engine.succeeded()
+                    ? Color{80, 220, 100, 255} : Color{255, 90, 90, 255};
+                const char* footer = engine.succeeded()
+                    ? "── COMPLETED ✓" : "── FAILED ✗";
+                DrawText(footer, px + pad, ty + 4, 14, footer_col);
             }
 
             EndDrawing();

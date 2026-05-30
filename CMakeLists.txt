@@ -15,6 +15,13 @@ list(APPEND CMAKE_PREFIX_PATH
 
 find_package(raylib REQUIRED)
 
+# BT.CPP — manually declare the imported target (library was built but not installed)
+add_library(BT::behaviortree_cpp SHARED IMPORTED GLOBAL)
+set_target_properties(BT::behaviortree_cpp PROPERTIES
+    IMPORTED_LOCATION "/home/forgo/libs/BehaviorTree.CPP/build/libbehaviortree_cpp.so"
+    INTERFACE_INCLUDE_DIRECTORIES "/home/forgo/libs/BehaviorTree.CPP/include"
+)
+
 # nlohmann/json — header-only
 include(FetchContent)
 FetchContent_Declare(nlohmann_json
@@ -34,6 +41,7 @@ set(SOURCES
     src/editor/mission_editor.cpp
     src/editor/command_panel.cpp
     src/serialization/mission_io.cpp
+    src/simulator/sim_engine.cpp
 )
 
 
@@ -41,7 +49,11 @@ add_executable(usv_mission_planner ${SOURCES})
 
 target_include_directories(usv_mission_planner PRIVATE src/)
 
-target_link_libraries(usv_mission_planner PRIVATE raylib nlohmann_json::nlohmann_json)
+target_link_libraries(usv_mission_planner PRIVATE
+    raylib
+    BT::behaviortree_cpp
+    nlohmann_json::nlohmann_json
+)
 
 add_custom_command(TARGET usv_mission_planner POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E create_symlink
