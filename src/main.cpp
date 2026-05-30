@@ -5,6 +5,8 @@
 #include "map/map_view.h"
 #include "editor/mission_editor.h"
 #include "editor/command_panel.h"
+#include "serialization/mission_io.h"
+#include <string>
 
 static bool toolbar_button(float x, float y, float w, float h,
                             const char* label, bool active)
@@ -37,8 +39,10 @@ int main()
     // Scope block: all GPU-owning objects must be destroyed BEFORE CloseWindow(),
     // otherwise UnloadTexture() is called on a dead OpenGL context → segfault.
     {
-        mission    current_mission;
-        tile_cache cache("assets/tiles/thermaikos");
+        mission     current_mission;
+        std::string status_msg;          // shown in toolbar after export
+        double      status_timer = 0.0;  // seconds remaining to show it
+        tile_cache  cache("assets/tiles/thermaikos");
 
         map_view view(GetScreenWidth(), GetScreenHeight(),
                       config::default_lat, config::default_lon,
@@ -84,14 +88,40 @@ int main()
             if (toolbar_button(  8.f, 4.f, 110.f, 32.f, "Add Waypoint", wp_active))
                 editor.set_tool(wp_active ? editor_tool::none : editor_tool::place_waypoint);
 
-            if (toolbar_button(124.f, 4.f,  96.f, 32.f, "Geofence", gf_active))
+            if (toolbar_button(124.f, 4.f,  90.f, 32.f, "Geofence", gf_active))
                 editor.set_tool(gf_active ? editor_tool::none : editor_tool::draw_geofence);
 
-            const char* hint =
-                wp_active ? "Click map to place waypoint  |  Click waypoint to rename" :
-                gf_active ? "Left-click to add vertex  |  Right-click to close polygon  |  Esc to cancel" :
-                            "Click a waypoint to rename it";
-            DrawText(hint, 228, 13, 13, Color{140, 145, 170, 255});
+            if (toolbar_button(220.f, 4.f,  96.f, 32.f, "Export JSON", false))
+            {
+                const std::string path = "mission.json";
+                if (mission_io::save(current_mission, path))
+                {
+                    status_msg   = "Saved: " + path;
+                    status_timer = 3.0;
+                }
+                else
+                {
+                    status_msg   = "Export failed!";
+                    status_timer = 3.0;
+                }
+            }
+
+            // Decay status message
+            if (status_timer > 0.0)
+            {
+                status_timer -= GetFrameTime();
+                Color col = status_msg.rfind("fail") != std::string::npos
+                          ? Color{255, 80, 80, 255} : Color{80, 220, 120, 255};
+                DrawText(status_msg.c_str(), 324, 13, 13, col);
+            }
+            else
+            {
+                const char* hint =
+                    wp_active ? "Click map to place waypoint  |  Click waypoint to rename" :
+                    gf_active ? "Left-click to add vertex  |  Right-click to close  |  Esc to cancel" :
+                                "Click a waypoint to rename it";
+                DrawText(hint, 324, 13, 13, Color{140, 145, 170, 255});
+            }
 
             EndDrawing();
         }

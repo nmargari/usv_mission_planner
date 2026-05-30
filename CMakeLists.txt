@@ -15,6 +15,16 @@ list(APPEND CMAKE_PREFIX_PATH
 
 find_package(raylib REQUIRED)
 
+# nlohmann/json — header-only
+include(FetchContent)
+FetchContent_Declare(nlohmann_json
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG        v3.11.3
+    GIT_SHALLOW    TRUE
+)
+set(JSON_BuildTests OFF CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(nlohmann_json)
+
 # ── Sources ───────────────────────────────────────────────────────────────────
 set(SOURCES
     src/main.cpp
@@ -23,6 +33,7 @@ set(SOURCES
     src/map/map_view.cpp
     src/editor/mission_editor.cpp
     src/editor/command_panel.cpp
+    src/serialization/mission_io.cpp
 )
 
 
@@ -30,7 +41,7 @@ add_executable(usv_mission_planner ${SOURCES})
 
 target_include_directories(usv_mission_planner PRIVATE src/)
 
-target_link_libraries(usv_mission_planner PRIVATE raylib)
+target_link_libraries(usv_mission_planner PRIVATE raylib nlohmann_json::nlohmann_json)
 
 add_custom_command(TARGET usv_mission_planner POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E create_symlink
