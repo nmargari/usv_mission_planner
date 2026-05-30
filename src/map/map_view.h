@@ -29,7 +29,10 @@ public:
     int    zoom_level() const { return zoom_; }
 
     // Pixels from the top of the window to reserve for the toolbar
-    void set_top_offset(int h) { top_offset_ = h; }
+    void set_top_offset(int h)   { top_offset_   = h; }
+
+    // Pixels from the right edge to reserve for the side panel
+    void set_right_offset(int w) { right_offset_ = w; }
 
 private:
     void do_pan(float dx, float dy);
@@ -42,7 +45,8 @@ private:
     int        screen_h_;
     tile_cache& cache_;
 
-    int   top_offset_  = 0;
+    int   top_offset_   = 0;
+    int   right_offset_ = 0;
     bool  panning_     = false;
     float pan_prev_x_  = 0.f;
     float pan_prev_y_  = 0.f;

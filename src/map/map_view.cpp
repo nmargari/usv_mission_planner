@@ -82,7 +82,8 @@ void map_view::update()
     screen_h_ = GetScreenHeight();
 
     Vector2 mouse   = GetMousePosition();
-    bool    in_map  = mouse.y > static_cast<float>(top_offset_);
+    bool    in_map  = mouse.y > static_cast<float>(top_offset_)
+                   && mouse.x < static_cast<float>(screen_w_ - right_offset_);
 
     // Zoom on scroll wheel (only in map area)
     float wheel = GetMouseWheelMove();
