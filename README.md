@@ -278,10 +278,3 @@ main.cpp  (window + main loop + toolbar + execution log panel)
 
 All subsystems hold a reference to `mission` owned by `main`. There is no global state. GPU resources (`tile_cache`) are scoped inside the main loop block so they are released before `CloseWindow()` is called.
 
----
-
-## Coding Style
-
-- **snake_case** for all identifiers (variables, functions, structs, enums, files)
-- **Allman braces** — opening `{` always on its own line
-- `.h` / `.cpp` file extensions
