@@ -2,6 +2,8 @@
 
 A desktop Ground Control Station (GCS) for planning and executing missions for an Unmanned Surface Vehicle (USV). The operator places waypoints on an interactive map, draws a geofence, and assembles an ordered sequence of commands using a visual block-based editor. Missions are saved and loaded as JSON. The built-in execution engine builds a real BehaviorTree from the mission and logs the execution order.
 
+<img width="1280" height="838" alt="USV_Mission_Planner" src="https://github.com/user-attachments/assets/4ea3e8ec-10ab-44e5-b87b-de2ffe2c7f49" />
+
 ---
 
 ## Tech Stack
